@@ -1,0 +1,140 @@
+{
+  "date": "2026-10-03",
+  "threshold": 50,
+  "text_model": {
+    "n": 700,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 350,
+      "fp": 0,
+      "fn": 0,
+      "tp": 350
+    }
+  },
+  "url_model": {
+    "n": 647,
+    "accuracy": 0.9923,
+    "precision": 0.9943,
+    "recall": 0.9914,
+    "f1": 0.9928,
+    "roc_auc": 0.9998,
+    "false_positive_rate": 0.0067,
+    "confusion_matrix": {
+      "tn": 295,
+      "fp": 2,
+      "fn": 3,
+      "tp": 347
+    }
+  },
+  "rules_only": {
+    "n": 700,
+    "accuracy": 0.8943,
+    "precision": 1.0,
+    "recall": 0.7886,
+    "f1": 0.8818,
+    "roc_auc": 0.9948,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 350,
+      "fp": 0,
+      "fn": 74,
+      "tp": 276
+    }
+  },
+  "rules_only_email": {
+    "n": 345,
+    "accuracy": 0.942,
+    "precision": 1.0,
+    "recall": 0.887,
+    "f1": 0.9401,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 168,
+      "fp": 0,
+      "fn": 20,
+      "tp": 157
+    }
+  },
+  "rules_only_sms": {
+    "n": 355,
+    "accuracy": 0.8479,
+    "precision": 1.0,
+    "recall": 0.6879,
+    "f1": 0.8151,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 182,
+      "fp": 0,
+      "fn": 54,
+      "tp": 119
+    }
+  },
+  "hybrid_engine": {
+    "n": 700,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 350,
+      "fp": 0,
+      "fn": 0,
+      "tp": 350
+    }
+  },
+  "hybrid_engine_email": {
+    "n": 345,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 168,
+      "fp": 0,
+      "fn": 0,
+      "tp": 177
+    }
+  },
+  "hybrid_engine_sms": {
+    "n": 355,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 182,
+      "fp": 0,
+      "fn": 0,
+      "tp": 173
+    }
+  },
+  "hybrid_engine_urls": {
+    "n": 647,
+    "accuracy": 0.9552,
+    "precision": 1.0,
+    "recall": 0.9171,
+    "f1": 0.9568,
+    "roc_auc": 0.997,
+    "false_positive_rate": 0.0,
+    "confusion_matrix": {
+      "tn": 297,
+      "fp": 0,
+      "fn": 29,
+      "tp": 321
+    }
+  },
+  "sample_errors": []
+}
