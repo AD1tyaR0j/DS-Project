@@ -40,7 +40,7 @@ PATTERNS: list[Pattern] = [
        r"\bre-?activate your account\b", r"\bunusual (sign[- ]in|login) activity\b", r"\bkyc\b.{0,30}\b(update|pending|expired?)\b"),
     _p("sensitive_data", "Requests sensitive information",
        "No genuine bank or company will ask for your OTP, PIN, CVV or full card number by message.", 25,
-       r"\b(share|send|enter|provide|tell|reply with)\b.{0,30}\b(otp|pin|cvv|password|card number|aadhaar|pan( card)?|ssn|social security|bank details|login details)\b",
+       r"\b(shar(e|ing)|send(ing)?|enter(ing)?|provid(e|ing)|tell|reply with|confirm(ing)?|verify(ing)?|updat(e|ing)|submit(ting)?)\b.{0,30}\b(otp|pin|cvv|password|card number|aadhaar|pan( card)?|ssn|social security|bank details|login details)\b",
        r"\b(otp|cvv|pin)\b.{0,20}\b(to|for) (verify|confirm|complete|receive)\b"),
     _p("prize", "Promises a prize, refund or reward",
        "Unexpected winnings, refunds and cashback are classic bait to get you to click or pay.", 15,

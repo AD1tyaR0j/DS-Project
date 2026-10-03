@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ r.level }} risk · PhishGuard{% endblock %}
+{% block content %}
+{% set lvl = r.level|lower %}
+<section class="verdict lvl-{{ lvl }}" role="alert">
+  <div class="gauge" style="--v: {{ r.score }}">
+    <div class="gauge-inner"><strong>{{ r.score }}</strong><span>/100</span></div>
+  </div>
+  <div>
+    <p class="eyebrow">{{ row.channel|upper }} · analysed {{ row.created_at.replace('T', ' ')[:16] }} UTC</p>
+    <h1>{{ r.level }} risk</h1>
+    <p class="advice">{{ r.advice }}</p>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Why</h2>
+  <p class="explanation">{{ r.explanation }}</p>
+  {% if r.text_probability is not none or r.url_probability is not none %}
+    <p class="probs">
+      {% if r.text_probability is not none %}<span>Text model: <b>{{ (r.text_probability * 100)|round|int }}%</b> phishing</span>{% endif %}
+      {% if r.url_probability is not none %}<span>Link model: <b>{{ (r.url_probability * 100)|round|int }}%</b> phishing</span>{% endif %}
+    </p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Evidence <span class="count">{{ r.indicators|length }}</span></h2>
+  {% if not r.indicators %}<p class="muted">No indicators were triggered.</p>{% endif %}
+  <ul class="indicators">
+    {% for i in r.indicators %}
+      <li class="{{ 'good' if i.weight < 0 else ('bad' if i.weight >= 20 else 'warn') }}">
+        <div class="ind-head">
+          <span class="tag">{{ i.category }}</span>
+          <strong>{{ i.title }}</strong>
+          <span class="pts">{{ '%+d'|format(i.weight) }}</span>
+        </div>
+        <p>{{ i.detail }}</p>
+        {% if i.evidence %}<code class="evidence">{{ i.evidence|defang_text }}</code>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{% if r.urls %}
+<section class="card">
+  <h2>Links found <span class="count">{{ r.urls|length }}</span></h2>
+  <p class="muted">Shown defanged ([.] and hxxp) so they can't be clicked by accident.</p>
+  <ul class="links">
+    {% for u, inds in r.urls.items() %}
+      <li><code>{{ u|defang }}</code>
+        {% if inds %}<span class="chips">{% for i in inds %}<span class="chip {{ 'good' if i.weight < 0 }}">{{ i.title }}</span>{% endfor %}</span>
+        {% else %}<span class="chips"><span class="chip neutral">no structural red flags</span></span>{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>Message</h2>
+  {% if row.sender %}<p><span class="muted">From:</span> {{ row.sender }}</p>{% endif %}
+  {% if row.subject %}<p><span class="muted">Subject:</span> {{ row.subject }}</p>{% endif %}
+  <pre class="body">{{ row.body }}</pre>
+</section>
+
+<section class="actions">
+  <form method="post" action="{{ url_for('feedback', analysis_id=row.id) }}">
+    <span class="muted">Was this right? {% if row.feedback %}You marked it <b>{{ row.feedback }}</b>.{% endif %}</span>
+    <button class="btn ghost" name="verdict" value="phish">It's phishing</button>
+    <button class="btn ghost" name="verdict" value="legit">It's legitimate</button>
+  </form>
+  <a class="btn" href="{{ url_for('index', channel=row.channel) }}">Analyse another</a>
+</section>
+{% endblock %}

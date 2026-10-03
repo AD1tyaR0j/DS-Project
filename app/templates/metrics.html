@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Evaluation · PhishGuard{% endblock %}
+{% block content %}
+<h1>Evaluation</h1>
+{% if not m %}
+  <div class="card empty"><p>No evaluation yet. Run <code>python scripts/evaluate.py</code> after training.</p></div>
+{% else %}
+<p class="lead">Held-out 25% test split, run on {{ m.date }}. The engine counts a message as phishing when its score is {{ m.threshold }} or more.</p>
+<div class="card table-wrap">
+  <table class="num">
+    <thead><tr><th>System</th><th>n</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th><th>False-positive rate</th></tr></thead>
+    <tbody>
+    {% for label, key in [('Text model (TF-IDF + Logistic Regression)', 'text_model'), ('URL model (Gradient Boosting)', 'url_model'),
+                          ('Rules only, messages', 'rules_only'), ('Hybrid engine, messages', 'hybrid_engine'),
+                          ('Hybrid engine, email', 'hybrid_engine_email'), ('Hybrid engine, SMS', 'hybrid_engine_sms'),
+                          ('Hybrid engine, links', 'hybrid_engine_urls')] if key in m %}
+      {% set x = m[key] %}
+      <tr><td>{{ label }}</td><td>{{ x.n }}</td><td>{{ '%.3f'|format(x.accuracy) }}</td><td>{{ '%.3f'|format(x.precision) }}</td>
+          <td>{{ '%.3f'|format(x.recall) }}</td><td>{{ '%.3f'|format(x.f1) }}</td><td>{{ x.roc_auc if x.roc_auc is not none else '-' }}</td>
+          <td>{{ '%.3f'|format(x.false_positive_rate) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% set cm = m.hybrid_engine.confusion_matrix %}
+<section class="card">
+  <h2>Hybrid engine confusion matrix</h2>
+  <div class="cm">
+    <div></div><div class="h">Predicted legit</div><div class="h">Predicted phish</div>
+    <div class="h">Actual legit</div><div class="ok">{{ cm.tn }}</div><div class="no">{{ cm.fp }}</div>
+    <div class="h">Actual phish</div><div class="no">{{ cm.fn }}</div><div class="ok">{{ cm.tp }}</div>
+  </div>
+</section>
+
+{% if m.sample_errors %}
+<section class="card">
+  <h2>Sample mistakes</h2>
+  <ul class="plain">{% for e in m.sample_errors %}<li><span class="pill">{{ e.label }} · {{ e.score }}</span> {{ e.text }}</li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<p class="muted">Numbers measured on the bundled generated seed dataset show the pipeline works end to end. They are not real-world accuracy. Import a public dataset with <code>scripts/import_public.py</code> and re-run training and evaluation for meaningful results.</p>
+{% endif %}
+{% endblock %}
