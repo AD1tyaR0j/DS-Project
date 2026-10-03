@@ -103,13 +103,13 @@ The score blends the ML probabilities with the weighted rule indicators, so ever
 ## 8. Milestones
 
 1. ✅ Spec (this document)
-2. Core feature extractors (text, URL, sender, headers) + message parsers
-3. Dataset builder, ML models, training script
-4. Risk engine + explanation generator
-5. SQLite history
-6. Flask web UI: analyse, result warning, history, metrics
-7. Evaluation script + report
-8. Tests, README, demo instructions
+2. ✅ Core feature extractors (text, URL, sender, headers) + message parsers
+3. ✅ Dataset builder, ML models, training script
+4. ✅ Risk engine + explanation generator
+5. ✅ SQLite history
+6. ✅ Flask web UI: analyse, result warning, history, metrics
+7. ✅ Evaluation script + report
+8. ✅ Tests, README, demo instructions
 9. *(Stretch)* Browser extension that calls the local API to check links in Gmail/web pages
 
 ## 9. Non-goals / Safety
