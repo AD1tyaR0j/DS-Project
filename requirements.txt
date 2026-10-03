@@ -1,0 +1,8 @@
+flask>=3.0
+scikit-learn>=1.4
+pandas>=2.0
+numpy>=1.26
+joblib>=1.3
+pytest>=8.0
+# Optional: friendlier LLM-written explanations (set ANTHROPIC_API_KEY and PHISHGUARD_LLM=1)
+anthropic>=0.60

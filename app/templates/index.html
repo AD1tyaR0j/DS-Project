@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Is this message safe?</h1>
+  <p class="lead">Paste a suspicious email, text message or link. PhishGuard checks the language, sender, links and metadata, then explains what it found before you act.</p>
+</section>
+
+<div class="tabs" role="tablist">
+  {% for key, label in [('email', 'Email'), ('sms', 'SMS'), ('url', 'Link only')] %}
+    <a role="tab" href="{{ url_for('index', channel=key) }}" class="tab {{ 'on' if channel == key }}" aria-selected="{{ 'true' if channel == key else 'false' }}">{{ label }}</a>
+  {% endfor %}
+</div>
+
+<form class="card form" method="post" action="{{ url_for('analyse') }}" enctype="multipart/form-data">
+  <input type="hidden" name="channel" value="{{ channel }}">
+  {% if channel == 'email' %}
+    <div class="grid2">
+      <label>From <input name="sender" placeholder="PayPal Support &lt;support@example.com&gt;" autocomplete="off"></label>
+      <label>Reply-To <span class="opt">optional</span><input name="reply_to" placeholder="reply@example.com" autocomplete="off"></label>
+    </div>
+    <label>Subject <input name="subject" placeholder="Your account has been limited" autocomplete="off"></label>
+    <label>Body <textarea name="body" rows="9" placeholder="Paste the email text or HTML here"></textarea></label>
+    <div class="or"><span>or upload the raw email</span></div>
+    <label class="file">.eml file (headers give SPF/DKIM/DMARC results) <input type="file" name="eml" accept=".eml,message/rfc822"></label>
+  {% elif channel == 'sms' %}
+    <label>Sender <span class="opt">number or sender ID</span><input name="sender" placeholder="+91 98xxxxxxx or VM-HDFCBK" autocomplete="off"></label>
+    <label>Message <textarea name="body" rows="6" placeholder="Paste the SMS text here"></textarea></label>
+  {% else %}
+    <label>Link <input name="url" placeholder="http://example-login-verify.xyz/account" autocomplete="off"></label>
+    <p class="hint">The link is analysed by its structure only. PhishGuard never visits it.</p>
+  {% endif %}
+  <button class="btn" type="submit">Analyse</button>
+</form>
+
+<section class="how">
+  <div><h3>Language</h3><p>Urgency, threats, requests for OTPs or passwords, prizes, fake jobs and delivery scams.</p></div>
+  <div><h3>Links</h3><p>Look-alike domains, raw IPs, hidden destinations, shorteners and risky downloads.</p></div>
+  <div><h3>Sender</h3><p>Display-name spoofing, free-mail "banks", reply-to tricks and failed SPF/DKIM/DMARC.</p></div>
+  <div><h3>AI models</h3><p>Text and URL classifiers trained on labelled phishing and legitimate examples.</p></div>
+</section>
+{% endblock %}

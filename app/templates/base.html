@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PhishGuard{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="currentColor"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke="var(--bg)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      PhishGuard
+    </a>
+    <nav>
+      <a href="{{ url_for('index') }}" class="{{ 'on' if request.endpoint == 'index' }}">Analyse</a>
+      <a href="{{ url_for('history_view') }}" class="{{ 'on' if request.endpoint == 'history_view' }}">History</a>
+      <a href="{{ url_for('metrics') }}" class="{{ 'on' if request.endpoint == 'metrics' }}">Evaluation</a>
+    </nav>
+  </header>
+  <main class="wrap">
+    {% if not models_loaded %}
+      <div class="notice">ML models not found, running on rules only. Run <code>python scripts/train.py</code> to enable them.</div>
+    {% endif %}
+    {% with msgs = get_flashed_messages() %}
+      {% for m in msgs %}<div class="notice">{{ m }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="foot">PhishGuard only analyses and warns. It never opens links, deletes or replies to messages.</footer>
+</body>
+</html>

@@ -48,6 +48,10 @@ def url_matrix(urls: list[str]) -> np.ndarray:
     return np.array([url_vector(u) for u in urls], dtype=float)
 
 
+STOP_TERMS = {"and", "the", "to", "a", "of", "in", "is", "for", "on", "you", "your", "this", "it", "or", "be", "at",
+              "by", "we", "our", "with", "http", "https", "www", "com", "the link", "link", "from", "sms", "email"}
+
+
 def top_text_terms(model: Pipeline, text: str, k: int = 6) -> list[str]:
     """Word n-grams in this message that pushed the text model most towards 'phish'."""
     union: FeatureUnion = model.named_steps["features"]
@@ -56,7 +60,10 @@ def top_text_terms(model: Pipeline, text: str, k: int = 6) -> list[str]:
     vec = words.transform([text]).tocoo()
     contrib = sorted(((v * coef[j], j) for j, v in zip(vec.col, vec.data)), reverse=True)
     names = words.get_feature_names_out()
-    return [names[j] for c, j in contrib[:k] if c > 0 and not names[j].startswith(("from", "sms", "email"))]
+    terms = [names[j] for c, j in contrib if c > 0 and names[j] not in STOP_TERMS
+             and not names[j].startswith(("from", "sms ", "email "))
+             and not all(w in STOP_TERMS for w in names[j].split())]
+    return terms[:k]
 
 
 def top_url_features(model: GradientBoostingClassifier, k: int = 3) -> list[str]:

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}History · PhishGuard{% endblock %}
+{% block content %}
+<h1>History</h1>
+<p class="lead">{{ stats.total }} message{{ '' if stats.total == 1 else 's' }} analysed.</p>
+
+<div class="filters">
+  <a href="{{ url_for('history_view') }}" class="chip {{ 'on' if not level }}">All</a>
+  {% for l in levels|reverse %}
+    <a href="{{ url_for('history_view', level=l) }}" class="chip lvl-{{ l|lower }} {{ 'on' if level == l }}">{{ l }} · {{ stats.by_level.get(l, 0) }}</a>
+  {% endfor %}
+</div>
+
+{% if not rows %}
+  <div class="card empty"><p>Nothing here yet. <a href="{{ url_for('index') }}">Analyse a message</a> and it will show up in this list.</p></div>
+{% else %}
+<div class="card table-wrap">
+  <table>
+    <thead><tr><th>Risk</th><th>Channel</th><th>Message</th><th>Top reason</th><th>Your verdict</th><th>When (UTC)</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+        {% set top = (row.result.indicators|selectattr('weight', 'gt', 0)|list)[:1] %}
+        <tr>
+          <td><a class="pill lvl-{{ row.level|lower }}" href="{{ url_for('result', analysis_id=row.id) }}">{{ row.score }} {{ row.level }}</a></td>
+          <td>{{ row.channel }}</td>
+          <td class="msg"><a href="{{ url_for('result', analysis_id=row.id) }}">{{ (row.subject or row.body)[:80]|defang_text }}</a>
+            {% if row.sender %}<div class="muted small">{{ row.sender }}</div>{% endif %}</td>
+          <td class="small">{{ top[0].title if top else '-' }}</td>
+          <td>{{ row.feedback or '-' }}</td>
+          <td class="small nowrap">{{ row.created_at.replace('T', ' ')[:16] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
