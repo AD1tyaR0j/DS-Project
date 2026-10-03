@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{{ r.level }} risk · PhishGuard{% endblock %}
+{% block body_class %}risk-{{ r.level|lower }}{% endblock %}
 {% block content %}
 {% set lvl = r.level|lower %}
 <section class="verdict lvl-{{ lvl }}" role="alert">
   <div class="gauge" style="--v: {{ r.score }}">
-    <div class="gauge-inner"><strong>{{ r.score }}</strong><span>/100</span></div>
+    <div class="gauge-inner"><strong data-count="{{ r.score }}">{{ r.score }}</strong><span>/100</span></div>
   </div>
   <div>
-    <p class="eyebrow">{{ row.channel|upper }} · analysed {{ row.created_at.replace('T', ' ')[:16] }} UTC</p>
     <h1>{{ r.level }} risk</h1>
+    <p class="meta">{{ {'email': 'Email', 'sms': 'SMS', 'url': 'Link'}.get(row.channel, row.channel) }} · analysed {{ row.created_at.replace('T', ' ')[:16] }} UTC</p>
     <p class="advice">{{ r.advice }}</p>
   </div>
 </section>
@@ -17,10 +18,12 @@
   <h2>Why</h2>
   <p class="explanation">{{ r.explanation }}</p>
   {% if r.text_probability is not none or r.url_probability is not none %}
-    <p class="probs">
-      {% if r.text_probability is not none %}<span>Text model: <b>{{ (r.text_probability * 100)|round|int }}%</b> phishing</span>{% endif %}
-      {% if r.url_probability is not none %}<span>Link model: <b>{{ (r.url_probability * 100)|round|int }}%</b> phishing</span>{% endif %}
-    </p>
+    <div class="probs">
+      {% if r.text_probability is not none %}{% set p = (r.text_probability * 100)|round|int %}
+        <span class="prob">Text model: <b>{{ p }}%</b> phishing<span class="bar"><i style="--p: {{ p }}"></i></span></span>{% endif %}
+      {% if r.url_probability is not none %}{% set p = (r.url_probability * 100)|round|int %}
+        <span class="prob">Link model: <b>{{ p }}%</b> phishing<span class="bar"><i style="--p: {{ p }}"></i></span></span>{% endif %}
+    </div>
   {% endif %}
 </section>
 
@@ -29,7 +32,7 @@
   {% if not r.indicators %}<p class="muted">No indicators were triggered.</p>{% endif %}
   <ul class="indicators">
     {% for i in r.indicators %}
-      <li class="{{ 'good' if i.weight < 0 else ('bad' if i.weight >= 20 else 'warn') }}">
+      <li class="{{ 'good' if i.weight < 0 else ('bad' if i.weight >= 20 else 'warn') }}" style="--i: {{ loop.index0 }}">
         <div class="ind-head">
           <span class="tag">{{ i.category }}</span>
           <strong>{{ i.title }}</strong>
@@ -70,6 +73,7 @@
     <button class="btn ghost" name="verdict" value="phish">It's phishing</button>
     <button class="btn ghost" name="verdict" value="legit">It's legitimate</button>
   </form>
-  <a class="btn" href="{{ url_for('index', channel=row.channel) }}">Analyse another</a>
+  <a class="btn" href="{{ url_for('index', channel=row.channel) }}">Analyse another
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
 </section>
 {% endblock %}
