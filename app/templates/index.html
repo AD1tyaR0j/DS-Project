@@ -1,13 +1,29 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="hero">
+  <svg class="hero-mark" viewBox="0 0 132 132" fill="none" aria-hidden="true">
+    <circle class="ring" cx="66" cy="66" r="64" stroke="currentColor" stroke-width="1.5"/>
+    <circle class="ring" cx="66" cy="66" r="64" stroke="currentColor" stroke-width="1.5"/>
+    <circle class="ring" cx="66" cy="66" r="64" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M66 40 48 47v13c0 11 7.6 20.8 18 24.4C76.4 80.8 84 71 84 60V47l-18-7Z" fill="currentColor" opacity=".14"/>
+    <path d="M66 40 48 47v13c0 11 7.6 20.8 18 24.4C76.4 80.8 84 71 84 60V47l-18-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="m58.5 62 5 5 9-10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
   <h1>Is this message safe?</h1>
   <p class="lead">Paste a suspicious email, text message or link. PhishGuard checks the language, sender, links and metadata, then explains what it found before you act.</p>
 </section>
 
 <div class="tabs" role="tablist">
+  {% set icons = {
+    'email': '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
+    'sms': '<path d="M5 5h14v10H9l-4 4z"/>',
+    'url': '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>'
+  } %}
   {% for key, label in [('email', 'Email'), ('sms', 'SMS'), ('url', 'Link only')] %}
-    <a role="tab" href="{{ url_for('index', channel=key) }}" class="tab {{ 'on' if channel == key }}" aria-selected="{{ 'true' if channel == key else 'false' }}">{{ label }}</a>
+    <a role="tab" href="{{ url_for('index', channel=key) }}" class="tab {{ 'on' if channel == key }}" aria-selected="{{ 'true' if channel == key else 'false' }}">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ icons[key]|safe }}</svg>
+      {{ label }}
+    </a>
   {% endfor %}
 </div>
 
@@ -16,26 +32,41 @@
   {% if channel == 'email' %}
     <div class="grid2">
       <label>From <input name="sender" placeholder="PayPal Support &lt;support@example.com&gt;" autocomplete="off"></label>
-      <label>Reply-To <span class="opt">optional</span><input name="reply_to" placeholder="reply@example.com" autocomplete="off"></label>
+      <label><span>Reply-To <span class="opt">optional</span></span><input name="reply_to" placeholder="reply@example.com" autocomplete="off"></label>
     </div>
     <label>Subject <input name="subject" placeholder="Your account has been limited" autocomplete="off"></label>
     <label>Body <textarea name="body" rows="9" placeholder="Paste the email text or HTML here"></textarea></label>
     <div class="or"><span>or upload the raw email</span></div>
     <label class="file">.eml file (headers give SPF/DKIM/DMARC results) <input type="file" name="eml" accept=".eml,message/rfc822"></label>
   {% elif channel == 'sms' %}
-    <label>Sender <span class="opt">number or sender ID</span><input name="sender" placeholder="+91 98xxxxxxx or VM-HDFCBK" autocomplete="off"></label>
+    <label><span>Sender <span class="opt">number or sender ID</span></span><input name="sender" placeholder="+91 98xxxxxxx or VM-HDFCBK" autocomplete="off"></label>
     <label>Message <textarea name="body" rows="6" placeholder="Paste the SMS text here"></textarea></label>
   {% else %}
     <label>Link <input name="url" placeholder="http://example-login-verify.xyz/account" autocomplete="off"></label>
     <p class="hint">The link is analysed by its structure only. PhishGuard never visits it.</p>
   {% endif %}
-  <button class="btn" type="submit">Analyse</button>
+  <button class="btn" type="submit">
+    Analyse
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </button>
 </form>
 
 <section class="how">
-  <div><h3>Language</h3><p>Urgency, threats, requests for OTPs or passwords, prizes, fake jobs and delivery scams.</p></div>
-  <div><h3>Links</h3><p>Look-alike domains, raw IPs, hidden destinations, shorteners and risky downloads.</p></div>
-  <div><h3>Sender</h3><p>Display-name spoofing, free-mail "banks", reply-to tricks and failed SPF/DKIM/DMARC.</p></div>
-  <div><h3>AI models</h3><p>Text and URL classifiers trained on labelled phishing and legitimate examples.</p></div>
+  <div>
+    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="17" r="3"/></svg></span>
+    <h3>Language</h3><p>Urgency, threats, requests for OTPs or passwords, prizes, fake jobs and delivery scams.</p>
+  </div>
+  <div>
+    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg></span>
+    <h3>Links</h3><p>Look-alike domains, raw IPs, hidden destinations, shorteners and risky downloads.</p>
+  </div>
+  <div>
+    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+    <h3>Sender</h3><p>Display-name spoofing, free-mail "banks", reply-to tricks and failed SPF/DKIM/DMARC.</p>
+  </div>
+  <div>
+    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg></span>
+    <h3>AI models</h3><p>Text and URL classifiers trained on labelled phishing and legitimate examples.</p>
+  </div>
 </section>
 {% endblock %}

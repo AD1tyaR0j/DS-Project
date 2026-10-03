@@ -19,8 +19,8 @@
     <thead><tr><th>Risk</th><th>Channel</th><th>Message</th><th>Top reason</th><th>Your verdict</th><th>When (UTC)</th></tr></thead>
     <tbody>
       {% for row in rows %}
-        {% set top = (row.result.indicators|selectattr('weight', 'gt', 0)|list)[:1] %}
-        <tr>
+        {% set top = (row.result.indicators|selectattr('weight', 'gt', 0)|rejectattr('category', 'equalto', 'model')|list)[:1] %}
+        <tr style="--i: {{ loop.index0 }}">
           <td><a class="pill lvl-{{ row.level|lower }}" href="{{ url_for('result', analysis_id=row.id) }}">{{ row.score }} {{ row.level }}</a></td>
           <td>{{ row.channel }}</td>
           <td class="msg"><a href="{{ url_for('result', analysis_id=row.id) }}">{{ (row.subject or row.body)[:80]|defang_text }}</a>
