@@ -9,7 +9,7 @@ from pathlib import Path
 
 from flask import Flask, abort, flash, jsonify, redirect, render_template, request, url_for
 
-from phishguard.engine import LEVELS, RiskEngine
+from phishguard.engine import CATEGORY_CAPS, LEVELS, RiskEngine
 from phishguard.ml import Models
 from phishguard.parsers import URL_RE, from_email_fields, from_sms, from_url, parse_eml
 from phishguard.storage import DEFAULT_DB, History
@@ -26,6 +26,22 @@ def defang(url: str) -> str:
 def defang_text(text: str) -> str:
     """Defang every URL inside a piece of free text, leaving the rest untouched."""
     return URL_RE.sub(lambda m: defang(m.group(0)), text)
+
+
+CATEGORY_LABELS = {"sender": "Sender", "url": "Links", "language": "Language", "metadata": "Headers", "model": "AI models"}
+
+
+def score_breakdown(indicators: list[dict]) -> list[dict]:
+    """Points each category contributed to the score, after the engine's per-category caps."""
+    rows = []
+    for cat, label in CATEGORY_LABELS.items():
+        items = [i for i in indicators if i["category"] == cat]
+        if not items:
+            continue
+        raw = sum(i["weight"] for i in items)
+        cap = CATEGORY_CAPS.get(cat, 40)
+        rows.append({"key": cat, "label": label, "points": min(raw, cap), "cap": cap, "count": len(items)})
+    return sorted(rows, key=lambda r: -r["points"])
 
 
 def build_message(form, files):
@@ -56,11 +72,15 @@ def create_app(db_path: str | Path | None = None, engine: RiskEngine | None = No
 
     @app.context_processor
     def globals_():
-        return {"models_loaded": engine.models.available, "levels": [lvl for _, lvl, _ in reversed(LEVELS)]}
+        return {"models_loaded": engine.models.available, "levels": [lvl for _, lvl, _ in reversed(LEVELS)],
+                "category_labels": CATEGORY_LABELS, "score_breakdown": score_breakdown}
 
     @app.get("/")
     def index():
-        return render_template("index.html", channel=request.args.get("channel", "email"))
+        channel = request.args.get("channel", "email")
+        if channel not in ("email", "sms", "url"):
+            channel = "email"
+        return render_template("index.html", channel=channel, recent=history.recent(5))
 
     @app.post("/analyse")
     def analyse():

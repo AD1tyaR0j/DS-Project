@@ -3,77 +3,148 @@
 {% block body_class %}risk-{{ r.level|lower }}{% endblock %}
 {% block content %}
 {% set lvl = r.level|lower %}
-<section class="verdict lvl-{{ lvl }}" role="alert">
-  <div class="gauge" style="--v: {{ r.score }}">
-    <div class="gauge-inner"><strong data-count="{{ r.score }}">{{ r.score }}</strong><span>/100</span></div>
-  </div>
-  <div>
-    <h1>{{ r.level }} risk</h1>
-    <p class="meta">{{ {'email': 'Email', 'sms': 'SMS', 'url': 'Link'}.get(row.channel, row.channel) }} · analysed {{ row.created_at.replace('T', ' ')[:16] }} UTC</p>
-    <p class="advice">{{ r.advice }}</p>
-  </div>
-</section>
+{% set channel_label = {'email': 'Email', 'sms': 'SMS', 'url': 'Link'}.get(row.channel, row.channel) %}
+{% set breakdown = score_breakdown(r.indicators) %}
 
-<section class="card">
-  <h2>Why</h2>
-  <p class="explanation">{{ r.explanation }}</p>
-  {% if r.text_probability is not none or r.url_probability is not none %}
-    <div class="probs">
-      {% if r.text_probability is not none %}{% set p = (r.text_probability * 100)|round|int %}
-        <span class="prob">Text model: <b>{{ p }}%</b> phishing<span class="bar"><i style="--p: {{ p }}"></i></span></span>{% endif %}
-      {% if r.url_probability is not none %}{% set p = (r.url_probability * 100)|round|int %}
-        <span class="prob">Link model: <b>{{ p }}%</b> phishing<span class="bar"><i style="--p: {{ p }}"></i></span></span>{% endif %}
-    </div>
-  {% endif %}
-</section>
+<a class="back" href="{{ url_for('index', channel=row.channel) }}">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5m6-6-6 6 6 6"/></svg>
+  New analysis
+</a>
 
-<section class="card">
-  <h2>Evidence <span class="count">{{ r.indicators|length }}</span></h2>
-  {% if not r.indicators %}<p class="muted">No indicators were triggered.</p>{% endif %}
-  <ul class="indicators">
-    {% for i in r.indicators %}
-      <li class="{{ 'good' if i.weight < 0 else ('bad' if i.weight >= 20 else 'warn') }}" style="--i: {{ loop.index0 }}">
-        <div class="ind-head">
-          <span class="tag">{{ i.category }}</span>
-          <strong>{{ i.title }}</strong>
-          <span class="pts">{{ '%+d'|format(i.weight) }}</span>
+<div class="report">
+  <aside class="verdict-col">
+    <section class="panel verdict lvl-{{ lvl }}" role="alert">
+      <div class="verdict-top">
+        <div class="dial" style="--v: {{ r.score }}">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="dial-track" cx="60" cy="60" r="52"/>
+            <circle class="dial-fill" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="dial-num"><strong data-count="{{ r.score }}">{{ r.score }}</strong><span>of 100</span></div>
         </div>
-        <p>{{ i.detail }}</p>
-        {% if i.evidence %}<code class="evidence">{{ i.evidence|defang_text }}</code>{% endif %}
-      </li>
-    {% endfor %}
-  </ul>
-</section>
+        <div>
+          <p class="eyebrow">Risk level</p>
+          <h1 class="verdict-level">{{ r.level }}</h1>
+          <p class="verdict-meta">{{ channel_label }} · {{ row.created_at.replace('T', ' ')[:16] }} UTC</p>
+        </div>
+      </div>
 
-{% if r.urls %}
-<section class="card">
-  <h2>Links found <span class="count">{{ r.urls|length }}</span></h2>
-  <p class="muted">Shown defanged ([.] and hxxp) so they can't be clicked by accident.</p>
-  <ul class="links">
-    {% for u, inds in r.urls.items() %}
-      <li><code>{{ u|defang }}</code>
-        {% if inds %}<span class="chips">{% for i in inds %}<span class="chip {{ 'good' if i.weight < 0 }}">{{ i.title }}</span>{% endfor %}</span>
-        {% else %}<span class="chips"><span class="chip neutral">no structural red flags</span></span>{% endif %}
-      </li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
+      <div class="scale" style="--v: {{ r.score }}" aria-label="Score {{ r.score }} on a scale of 0 to 100">
+        <div class="scale-bar"><span class="s-low"></span><span class="s-medium"></span><span class="s-high"></span><span class="s-critical"></span></div>
+        <i class="scale-marker"></i>
+        <div class="scale-labels"><span>Low</span><span>Medium</span><span>High</span><span>Critical</span></div>
+      </div>
 
-<section class="card">
-  <h2>Message</h2>
-  {% if row.sender %}<p><span class="muted">From:</span> {{ row.sender }}</p>{% endif %}
-  {% if row.subject %}<p><span class="muted">Subject:</span> {{ row.subject }}</p>{% endif %}
-  <pre class="body">{{ row.body }}</pre>
-</section>
+      <p class="advice">{{ r.advice }}</p>
+    </section>
 
-<section class="actions">
-  <form method="post" action="{{ url_for('feedback', analysis_id=row.id) }}">
-    <span class="muted">Was this right? {% if row.feedback %}You marked it <b>{{ row.feedback }}</b>.{% endif %}</span>
-    <button class="btn ghost" name="verdict" value="phish">It's phishing</button>
-    <button class="btn ghost" name="verdict" value="legit">It's legitimate</button>
-  </form>
-  <a class="btn" href="{{ url_for('index', channel=row.channel) }}">Analyse another
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-</section>
+    {% if breakdown %}
+    <section class="panel">
+      <h2 class="panel-title">Score breakdown</h2>
+      <ul class="breakdown">
+        {% for b in breakdown %}
+          <li>
+            <div class="bd-row"><span><span class="dot c-{{ b.key }}"></span>{{ b.label }}</span><b>{{ '%+d'|format(b.points) }}</b></div>
+            <div class="meter"><i class="c-{{ b.key }}" style="--p: {{ [0, (b.points / b.cap * 100)|round|int]|max }}"></i></div>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="muted tiny">Each category is capped (shown as a full bar) so one noisy signal can't dominate.</p>
+    </section>
+    {% endif %}
+
+    {% if r.text_probability is not none or r.url_probability is not none %}
+    <section class="panel">
+      <h2 class="panel-title">Model confidence</h2>
+      <ul class="breakdown">
+        {% for label, p in [('Message text', r.text_probability), ('Links', r.url_probability)] if p is not none %}
+          {% set pct = (p * 100)|round|int %}
+          <li>
+            <div class="bd-row"><span>{{ label }}</span><b>{{ pct }}% phishing</b></div>
+            <div class="meter"><i class="{{ 'm-bad' if pct >= 50 else 'm-ok' }}" style="--p: {{ pct }}"></i></div>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="panel feedback">
+      <form method="post" action="{{ url_for('feedback', analysis_id=row.id) }}">
+        <h2 class="panel-title">Was this right?</h2>
+        {% if row.feedback %}<p class="muted small">You marked this as <b>{{ 'phishing' if row.feedback == 'phish' else 'legitimate' }}</b>.</p>{% endif %}
+        <div class="btn-row">
+          <button class="btn {{ 'selected' if row.feedback == 'phish' }}" name="verdict" value="phish">It's phishing</button>
+          <button class="btn {{ 'selected' if row.feedback == 'legit' }}" name="verdict" value="legit">It's legitimate</button>
+        </div>
+      </form>
+    </section>
+  </aside>
+
+  <div class="report-main">
+    <section class="panel">
+      <h2 class="panel-title">Summary</h2>
+      <p class="explanation">{{ r.explanation }}</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title-row">
+        <h2 class="panel-title">Evidence <span class="count">{{ r.indicators|length }}</span></h2>
+        <span class="legend"><span><i class="sev-bad"></i>Strong</span><span><i class="sev-warn"></i>Moderate</span><span><i class="sev-good"></i>Trust signal</span></span>
+      </div>
+      {% if not r.indicators %}<p class="muted">No warning signs were triggered.</p>{% endif %}
+      {% set ns = namespace(n=0) %}
+      {% for cat, label in category_labels.items() %}
+        {% set items = r.indicators|selectattr('category', 'equalto', cat)|sort(attribute='weight', reverse=true)|list %}
+        {% if items %}
+          <div class="ev-group">
+            <h3 class="ev-head"><span class="dot c-{{ cat }}"></span>{{ label }}<span class="count">{{ items|length }}</span></h3>
+            <ul class="indicators">
+              {% for i in items %}
+                <li class="{{ 'good' if i.weight < 0 else ('bad' if i.weight >= 20 else 'warn') }}" style="--i: {{ ns.n }}">
+                  <div class="ind-head">
+                    <strong>{{ i.title }}</strong>
+                    <span class="pts">{{ '%+d'|format(i.weight) }}</span>
+                  </div>
+                  <p>{{ i.detail }}</p>
+                  {% if i.evidence %}<code class="evidence">{{ i.evidence|defang_text }}</code>{% endif %}
+                </li>
+                {% set ns.n = ns.n + 1 %}
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </section>
+
+    {% if r.urls %}
+    <section class="panel">
+      <h2 class="panel-title">Links found <span class="count">{{ r.urls|length }}</span></h2>
+      <p class="muted small">Shown defanged (<code>hxxp</code>, <code>[.]</code>) so they can't be opened by accident.</p>
+      <ul class="links">
+        {% for u, inds in r.urls.items() %}
+          <li>
+            <code>{{ u|defang }}</code>
+            <span class="chips">
+              {% for i in inds %}<span class="chip {{ 'good' if i.weight < 0 else 'bad' }}">{{ i.title }}</span>
+              {% else %}<span class="chip neutral">No structural red flags</span>{% endfor %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2 class="panel-title">Original message</h2>
+      <div class="envelope">
+        <dl>
+          <dt>Type</dt><dd>{{ channel_label }}</dd>
+          {% if row.sender %}<dt>From</dt><dd class="mono">{{ row.sender|defang_text }}</dd>{% endif %}
+          {% if row.subject %}<dt>Subject</dt><dd>{{ row.subject|defang_text }}</dd>{% endif %}
+        </dl>
+        <pre class="body">{{ row.body|defang_text }}</pre>
+      </div>
+    </section>
+  </div>
+</div>
 {% endblock %}
