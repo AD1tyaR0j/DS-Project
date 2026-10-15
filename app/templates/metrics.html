@@ -1,45 +1,78 @@
 {% extends "base.html" %}
 {% block title %}Evaluation · PhishGuard{% endblock %}
 {% block content %}
-<h1>Evaluation</h1>
-{% if not m %}
-  <div class="card empty"><p>No evaluation yet. Run <code>python scripts/evaluate.py</code> after training.</p></div>
-{% else %}
-<p class="lead">Held-out 25% test split, run on {{ m.date }}. The engine counts a message as phishing when its score is {{ m.threshold }} or more.</p>
-<div class="card table-wrap">
-  <table class="num">
-    <thead><tr><th>System</th><th>n</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th><th>False-positive rate</th></tr></thead>
-    <tbody>
-    {% for label, key in [('Text model (TF-IDF + Logistic Regression)', 'text_model'), ('URL model (Gradient Boosting)', 'url_model'),
-                          ('Rules only, messages', 'rules_only'), ('Hybrid engine, messages', 'hybrid_engine'),
-                          ('Hybrid engine, email', 'hybrid_engine_email'), ('Hybrid engine, SMS', 'hybrid_engine_sms'),
-                          ('Hybrid engine, links', 'hybrid_engine_urls')] if key in m %}
-      {% set x = m[key] %}
-      <tr><td>{{ label }}</td><td>{{ x.n }}</td><td>{{ '%.3f'|format(x.accuracy) }}</td><td>{{ '%.3f'|format(x.precision) }}</td>
-          <td>{{ '%.3f'|format(x.recall) }}</td><td>{{ '%.3f'|format(x.f1) }}</td><td>{{ x.roc_auc if x.roc_auc is not none else '-' }}</td>
-          <td>{{ '%.3f'|format(x.false_positive_rate) }}</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
+<section class="page-head">
+  <p class="eyebrow" data-scramble>Evaluation</p>
+  <h1 data-split>How well does it work?</h1>
+  {% if m %}<p class="lead">Measured on a held-out 25% test split on {{ m.date }}. A message counts as phishing when its score is {{ m.threshold }} or more.</p>{% endif %}
+</section>
 
-{% set cm = m.hybrid_engine.confusion_matrix %}
-<section class="card">
-  <h2>Hybrid engine confusion matrix</h2>
-  <div class="cm">
-    <div></div><div class="h">Predicted legit</div><div class="h">Predicted phish</div>
-    <div class="h">Actual legit</div><div class="ok">{{ cm.tn }}</div><div class="no">{{ cm.fp }}</div>
-    <div class="h">Actual phish</div><div class="no">{{ cm.fn }}</div><div class="ok">{{ cm.tp }}</div>
+{% if not m %}
+  <div class="panel empty"><p>No evaluation yet. Run <code>python scripts/evaluate.py</code> after training.</p></div>
+{% else %}
+<div class="notice">Numbers measured on the bundled generated seed dataset show the pipeline works end to end. They are not real-world accuracy. Import a public dataset with <code>scripts/import_public.py</code>, then re-run training and evaluation.</div>
+
+{% set h = m.hybrid_engine %}
+<div class="kpis">
+  {% for label, val, hint in [('Accuracy', h.accuracy, 'All verdicts correct'), ('Precision', h.precision, 'Flagged that were phishing'),
+                              ('Recall', h.recall, 'Phishing that was caught'), ('F1 score', h.f1, 'Balance of the two'),
+                              ('False-positive rate', h.false_positive_rate, 'Safe messages flagged')] %}
+    <div class="kpi {{ 'kpi-inv' if loop.last }}">
+      <span class="kpi-label">{{ label }}</span>
+      <span class="kpi-num">{{ '%.1f'|format(val * 100) }}<small>%</small></span>
+      <span class="kpi-hint">{{ hint }}</span>
+    </div>
+  {% endfor %}
+</div>
+<p class="muted small kpi-caption">Hybrid engine on {{ h.n }} test messages (email and SMS).</p>
+
+<section class="panel flush">
+  <div class="panel-pad"><h2 class="panel-title">Model comparison</h2></div>
+  <div class="table-scroll">
+    <table class="table num">
+      <thead><tr><th>System</th><th>n</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th><th>FPR</th></tr></thead>
+      <tbody>
+      {% for label, key, group in [('Text model', 'text_model', 'TF-IDF + Logistic Regression'), ('URL model', 'url_model', 'Gradient Boosting'),
+                                   ('Rules only', 'rules_only', 'Messages'), ('Hybrid engine', 'hybrid_engine', 'Messages'),
+                                   ('Hybrid engine', 'hybrid_engine_email', 'Email'), ('Hybrid engine', 'hybrid_engine_sms', 'SMS'),
+                                   ('Hybrid engine', 'hybrid_engine_urls', 'Links')] if key in m %}
+        {% set x = m[key] %}
+        <tr class="{{ 'hl' if key == 'hybrid_engine' }}">
+          <td><b>{{ label }}</b><div class="sub">{{ group }}</div></td>
+          <td>{{ x.n }}</td>
+          <td>{{ '%.3f'|format(x.accuracy) }}</td>
+          <td>{{ '%.3f'|format(x.precision) }}</td>
+          <td>{{ '%.3f'|format(x.recall) }}</td>
+          <td class="f1"><span class="inline-bar" style="--p: {{ (x.f1 * 100)|round|int }}"></span>{{ '%.3f'|format(x.f1) }}</td>
+          <td>{{ x.roc_auc if x.roc_auc is not none else '—' }}</td>
+          <td>{{ '%.3f'|format(x.false_positive_rate) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 
-{% if m.sample_errors %}
-<section class="card">
-  <h2>Sample mistakes</h2>
-  <ul class="plain">{% for e in m.sample_errors %}<li><span class="pill">{{ e.label }} · {{ e.score }}</span> {{ e.text }}</li>{% endfor %}</ul>
-</section>
-{% endif %}
+{% set cm = h.confusion_matrix %}
+<div class="two-col">
+  <section class="panel">
+    <h2 class="panel-title">Confusion matrix</h2>
+    <p class="muted small">Hybrid engine, messages.</p>
+    <div class="cm">
+      <div></div><div class="h">Predicted safe</div><div class="h">Predicted phishing</div>
+      <div class="h">Actually safe</div><div class="ok"><b>{{ cm.tn }}</b><span>correct</span></div><div class="no"><b>{{ cm.fp }}</b><span>false alarm</span></div>
+      <div class="h">Actually phishing</div><div class="no"><b>{{ cm.fn }}</b><span>missed</span></div><div class="ok"><b>{{ cm.tp }}</b><span>caught</span></div>
+    </div>
+  </section>
 
-<p class="muted">Numbers measured on the bundled generated seed dataset show the pipeline works end to end. They are not real-world accuracy. Import a public dataset with <code>scripts/import_public.py</code> and re-run training and evaluation for meaningful results.</p>
+  <section class="panel">
+    <h2 class="panel-title">Sample mistakes</h2>
+    {% if m.sample_errors %}
+      <ul class="errors">{% for e in m.sample_errors %}<li><span class="tag-sm">{{ e.label }} · {{ e.score }}</span><span>{{ e.text|defang_text }}</span></li>{% endfor %}</ul>
+    {% else %}
+      <p class="muted">No misclassified messages in the test split.</p>
+    {% endif %}
+  </section>
+</div>
 {% endif %}
 {% endblock %}

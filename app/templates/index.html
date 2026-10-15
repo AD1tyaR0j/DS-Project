@@ -1,72 +1,143 @@
 {% extends "base.html" %}
+{% block globe %}hero{% endblock %}
 {% block content %}
-<section class="hero">
-  <svg class="hero-mark" viewBox="0 0 132 132" fill="none" aria-hidden="true">
-    <circle class="ring" cx="66" cy="66" r="64" stroke="currentColor" stroke-width="1.5"/>
-    <circle class="ring" cx="66" cy="66" r="64" stroke="currentColor" stroke-width="1.5"/>
-    <circle class="ring" cx="66" cy="66" r="64" stroke="currentColor" stroke-width="1.5"/>
-    <path d="M66 40 48 47v13c0 11 7.6 20.8 18 24.4C76.4 80.8 84 71 84 60V47l-18-7Z" fill="currentColor" opacity=".14"/>
-    <path d="M66 40 48 47v13c0 11 7.6 20.8 18 24.4C76.4 80.8 84 71 84 60V47l-18-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-    <path d="m58.5 62 5 5 9-10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>
-  <h1>Is this message safe?</h1>
-  <p class="lead">Paste a suspicious email, text message or link. PhishGuard checks the language, sender, links and metadata, then explains what it found before you act.</p>
+{% set icons = {
+  'email': '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  'sms': '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/>',
+  'url': '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>'
+} %}
+
+<section class="page-head hero">
+  <span class="badge"><i></i>{{ 'Hybrid engine online: rules + ML' if models_loaded else 'Rules engine online' }}</span>
+  <p class="eyebrow" data-scramble>Phishing &amp; fraud defense</p>
+  <h1 data-split>Check it before you <em>click&nbsp;it.</em></h1>
+  <p class="lead">Paste a suspicious email, text message or link. PhishGuard inspects the language, sender, links and headers, scores the risk and shows you exactly why.</p>
+  <ul class="hero-stats">
+    <li><b data-countup="12">12</b><span>scam language patterns</span></li>
+    <li><b data-countup="24">24</b><span>link features checked</span></li>
+    <li><b data-countup="2">2</b><span>ML models</span></li>
+    <li><b>0</b><span>links ever opened</span></li>
+  </ul>
 </section>
 
-<div class="tabs" role="tablist">
-  {% set icons = {
-    'email': '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
-    'sms': '<path d="M5 5h14v10H9l-4 4z"/>',
-    'url': '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>'
-  } %}
-  {% for key, label in [('email', 'Email'), ('sms', 'SMS'), ('url', 'Link only')] %}
-    <a role="tab" href="{{ url_for('index', channel=key) }}" class="tab {{ 'on' if channel == key }}" aria-selected="{{ 'true' if channel == key else 'false' }}">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ icons[key]|safe }}</svg>
-      {{ label }}
-    </a>
-  {% endfor %}
-</div>
+<div class="workbench">
+  <form class="panel composer" method="post" action="{{ url_for('analyse') }}" enctype="multipart/form-data" data-composer>
+    <input type="hidden" name="channel" value="{{ channel }}" data-channel-input>
 
-<form class="card form" method="post" action="{{ url_for('analyse') }}" enctype="multipart/form-data">
-  <input type="hidden" name="channel" value="{{ channel }}">
-  {% if channel == 'email' %}
-    <div class="grid2">
-      <label>From <input name="sender" placeholder="PayPal Support &lt;support@example.com&gt;" autocomplete="off"></label>
-      <label><span>Reply-To <span class="opt">optional</span></span><input name="reply_to" placeholder="reply@example.com" autocomplete="off"></label>
+    <div class="composer-head">
+      <div class="segmented" role="tablist" aria-label="Message type">
+        {% for key, label in [('email', 'Email'), ('sms', 'SMS'), ('url', 'Link')] %}
+          <a role="tab" href="{{ url_for('index', channel=key) }}" data-tab="{{ key }}"
+             class="{{ 'on' if channel == key }}" aria-selected="{{ 'true' if channel == key else 'false' }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{ icons[key]|safe }}</svg>
+            {{ label }}
+          </a>
+        {% endfor %}
+      </div>
+      <button type="button" class="link-btn" data-clear>Clear</button>
     </div>
-    <label>Subject <input name="subject" placeholder="Your account has been limited" autocomplete="off"></label>
-    <label>Body <textarea name="body" rows="9" placeholder="Paste the email text or HTML here"></textarea></label>
-    <div class="or"><span>or upload the raw email</span></div>
-    <label class="file">.eml file (headers give SPF/DKIM/DMARC results) <input type="file" name="eml" accept=".eml,message/rfc822"></label>
-  {% elif channel == 'sms' %}
-    <label><span>Sender <span class="opt">number or sender ID</span></span><input name="sender" placeholder="+91 98xxxxxxx or VM-HDFCBK" autocomplete="off"></label>
-    <label>Message <textarea name="body" rows="6" placeholder="Paste the SMS text here"></textarea></label>
-  {% else %}
-    <label>Link <input name="url" placeholder="http://example-login-verify.xyz/account" autocomplete="off"></label>
-    <p class="hint">The link is analysed by its structure only. PhishGuard never visits it.</p>
-  {% endif %}
-  <button class="btn" type="submit">
-    Analyse
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-  </button>
-</form>
 
-<section class="how">
-  <div>
-    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="17" r="3"/></svg></span>
-    <h3>Language</h3><p>Urgency, threats, requests for OTPs or passwords, prizes, fake jobs and delivery scams.</p>
-  </div>
-  <div>
-    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg></span>
-    <h3>Links</h3><p>Look-alike domains, raw IPs, hidden destinations, shorteners and risky downloads.</p>
-  </div>
-  <div>
-    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
-    <h3>Sender</h3><p>Display-name spoofing, free-mail "banks", reply-to tricks and failed SPF/DKIM/DMARC.</p>
-  </div>
-  <div>
-    <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/></svg></span>
-    <h3>AI models</h3><p>Text and URL classifiers trained on labelled phishing and legitimate examples.</p>
-  </div>
-</section>
+    <fieldset class="fields" data-panel="email" {{ 'hidden disabled' if channel != 'email' }}>
+      <legend class="sr-only">Email</legend>
+      <div class="row2">
+        <label class="field">
+          <span class="label">From</span>
+          <input name="sender" placeholder="PayPal Support &lt;support@example.com&gt;" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="label">Reply-To <em>optional</em></span>
+          <input name="reply_to" placeholder="reply@example.com" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <label class="field">
+        <span class="label">Subject</span>
+        <input name="subject" placeholder="Your account has been limited" autocomplete="off">
+      </label>
+      <label class="field">
+        <span class="label">Body</span>
+        <textarea name="body" rows="9" placeholder="Paste the email text or HTML here"></textarea>
+      </label>
+      <label class="dropzone" data-dropzone>
+        <input type="file" name="eml" accept=".eml,message/rfc822">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4m0 0L8 8m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        <span data-dropzone-text><b>Or drop a raw .eml file</b> to include headers (SPF, DKIM, DMARC)</span>
+      </label>
+    </fieldset>
+
+    <fieldset class="fields" data-panel="sms" {{ 'hidden disabled' if channel != 'sms' }}>
+      <legend class="sr-only">SMS</legend>
+      <label class="field">
+        <span class="label">Sender <em>number or sender ID</em></span>
+        <input name="sender" placeholder="+91 98xxxxxxx or VM-HDFCBK" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field">
+        <span class="label">Message</span>
+        <textarea name="body" rows="7" placeholder="Paste the SMS text here"></textarea>
+      </label>
+    </fieldset>
+
+    <fieldset class="fields" data-panel="url" {{ 'hidden disabled' if channel != 'url' }}>
+      <legend class="sr-only">Link</legend>
+      <label class="field">
+        <span class="label">Link</span>
+        <input class="mono" name="url" placeholder="http://example-login-verify.xyz/account" autocomplete="off" spellcheck="false">
+      </label>
+      <p class="hint">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg>
+        Checked by its structure only. PhishGuard never visits the link.
+      </p>
+    </fieldset>
+
+    <div class="composer-foot">
+      <div class="live" data-live hidden aria-live="polite">
+        <span class="live-dial" style="--v: 0"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15"/><circle class="live-fill" cx="18" cy="18" r="15"/></svg><b data-live-score>0</b></span>
+        <span class="live-text"><span class="live-label">Live estimate</span><b data-live-level>Low</b></span>
+      </div>
+      <span class="kbd-hint"><kbd>Ctrl</kbd> <kbd>Enter</kbd> to analyse</span>
+      <button class="btn primary" type="submit">
+        Analyse
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </form>
+
+  <aside class="side">
+    <section class="panel samples" data-samples hidden>
+      <h2 class="panel-title">Try a sample</h2>
+      <p class="muted small">Fill the form with a known example to see how scoring works.</p>
+      <ul class="sample-list" data-sample-list></ul>
+    </section>
+
+    <section class="panel">
+      <h2 class="panel-title">What gets checked</h2>
+      <ul class="checks">
+        <li><span class="dot c-sender"></span><div><b>Sender</b><p>Display-name spoofing, free-mail "banks", reply-to tricks, personal numbers.</p></div></li>
+        <li><span class="dot c-url"></span><div><b>Links</b><p>Look-alike domains, raw IPs, shorteners, hidden destinations, risky downloads.</p></div></li>
+        <li><span class="dot c-language"></span><div><b>Language</b><p>Urgency, threats, OTP or password requests, prizes, job and delivery scams.</p></div></li>
+        <li><span class="dot c-metadata"></span><div><b>Headers</b><p>SPF, DKIM and DMARC results from uploaded .eml files.</p></div></li>
+        <li><span class="dot c-model"></span><div><b>AI models</b><p>Text and URL classifiers trained on labelled examples.</p></div></li>
+      </ul>
+    </section>
+
+    {% if recent %}
+    <section class="panel">
+      <div class="panel-title-row">
+        <h2 class="panel-title">Recent</h2>
+        <a class="small" href="{{ url_for('history_view') }}">View all</a>
+      </div>
+      <ul class="recent">
+        {% for row in recent %}
+          <li class="lvl-{{ row.level|lower }}">
+            <a href="{{ url_for('result', analysis_id=row.id) }}">
+              <span class="score-chip">{{ row.score }}</span>
+              <span class="recent-text">{{ (row.subject or row.body or '')[:60]|defang_text }}</span>
+              <span class="recent-ch">{{ {'email': 'Email', 'sms': 'SMS', 'url': 'Link'}.get(row.channel, row.channel) }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </aside>
+</div>
 {% endblock %}
