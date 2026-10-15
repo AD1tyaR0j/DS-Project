@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block globe %}hero{% endblock %}
 {% block content %}
 {% set icons = {
   'email': '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
@@ -6,10 +7,17 @@
   'url': '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>'
 } %}
 
-<section class="page-head">
-  <p class="eyebrow">Message analysis</p>
-  <h1>Check it before you click it.</h1>
+<section class="page-head hero">
+  <span class="badge"><i></i>{{ 'Hybrid engine online: rules + ML' if models_loaded else 'Rules engine online' }}</span>
+  <p class="eyebrow" data-scramble>Phishing &amp; fraud defense</p>
+  <h1 data-split>Check it before you <em>click&nbsp;it.</em></h1>
   <p class="lead">Paste a suspicious email, text message or link. PhishGuard inspects the language, sender, links and headers, scores the risk and shows you exactly why.</p>
+  <ul class="hero-stats">
+    <li><b data-countup="12">12</b><span>scam language patterns</span></li>
+    <li><b data-countup="24">24</b><span>link features checked</span></li>
+    <li><b data-countup="2">2</b><span>ML models</span></li>
+    <li><b>0</b><span>links ever opened</span></li>
+  </ul>
 </section>
 
 <div class="workbench">

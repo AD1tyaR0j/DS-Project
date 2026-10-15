@@ -2,8 +2,8 @@
 {% block title %}Evaluation · PhishGuard{% endblock %}
 {% block content %}
 <section class="page-head">
-  <p class="eyebrow">Evaluation</p>
-  <h1>How well does it work?</h1>
+  <p class="eyebrow" data-scramble>Evaluation</p>
+  <h1 data-split>How well does it work?</h1>
   {% if m %}<p class="lead">Measured on a held-out 25% test split on {{ m.date }}. A message counts as phishing when its score is {{ m.threshold }} or more.</p>{% endif %}
 </section>
 
