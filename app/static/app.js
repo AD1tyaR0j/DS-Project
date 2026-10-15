@@ -64,6 +64,7 @@
     const url = new URL(location.href);
     url.searchParams.set("channel", channel);
     history.replaceState(null, "", url);
+    form.dispatchEvent(new Event("pg:changed"));
     if (focus) $("[data-panel='" + channel + "'] textarea, [data-panel='" + channel + "'] input:not([type=file])", form)?.focus();
   }
 
@@ -105,12 +106,14 @@
       const el = $(`[name='${name}']`, panel);
       if (el) el.value = value;
     });
+    form.dispatchEvent(new Event("pg:changed"));
     $("button[type=submit]", form).focus({ preventScroll: true });
     if (window.innerWidth < 980) form.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }
 
   $("[data-clear]", form)?.addEventListener("click", () => {
     clearPanel($(`[data-panel='${channelInput.value}']`, form));
+    form.dispatchEvent(new Event("pg:changed"));
   });
 
   // .eml dropzone: show the chosen file and accept drag-and-drop.
@@ -138,6 +141,57 @@
         input.dispatchEvent(new Event("change"));
       }
     });
+  }
+
+  // Live estimate: score the draft through the JSON API (not saved to history) as the user types.
+  const live = $("[data-live]", form);
+  if (live && window.fetch) {
+    const dial = $(".live-dial", live), num = $("[data-live-score]", live), lvl = $("[data-live-level]", live);
+    const levelOf = (s) => (s >= 75 ? "Critical" : s >= 50 ? "High" : s >= 25 ? "Medium" : "Low");
+    let timer = 0, ctrl = null, shown = 0;
+
+    const animateTo = (target) => {
+      const from = shown, t0 = performance.now(), dur = reduce ? 1 : 600;
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / dur), v = Math.round(from + (target - from) * (1 - Math.pow(1 - t, 3)));
+        num.textContent = v; dial.style.setProperty("--v", v);
+        if (t < 1) requestAnimationFrame(step);
+      };
+      shown = target;
+      requestAnimationFrame(step);
+    };
+
+    const estimate = async () => {
+      const channel = channelInput.value;
+      const panel = $(`[data-panel='${channel}']`, form);
+      const file = $("input[type=file]", panel);
+      const payload = { channel, save: false };
+      $$("input:not([type=file]), textarea", panel).forEach((el) => { payload[el.name] = el.value; });
+      const hasText = Object.entries(payload).some(([k, v]) => !["channel", "save"].includes(k) && String(v).trim());
+      if (!hasText || (file && file.files && file.files.length)) {
+        live.hidden = true; window.PhishFX?.setRisk(0); return;
+      }
+      ctrl?.abort(); ctrl = new AbortController();
+      live.classList.add("busy");
+      try {
+        const res = await fetch(form.action.replace(/\/analyse$/, "/api/analyse"), {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: ctrl.signal,
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const level = levelOf(data.score);
+        live.hidden = false;
+        live.className = "live lvl-" + level.toLowerCase();
+        lvl.textContent = level;
+        animateTo(data.score);
+        window.PhishFX?.setRisk(data.score);
+      } catch (_) { /* aborted or offline: keep the last estimate */ }
+      finally { live.classList.remove("busy"); }
+    };
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(estimate, 650); };
+    form.addEventListener("input", schedule);
+    form.addEventListener("change", schedule);
+    form.addEventListener("pg:changed", schedule);
   }
 
   // Ctrl/Cmd + Enter submits.
