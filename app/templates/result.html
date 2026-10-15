@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ r.level }} risk · PhishGuard{% endblock %}
 {% block body_class %}risk-{{ r.level|lower }}{% endblock %}
+{% block score %}{{ r.score }}{% endblock %}
 {% block content %}
 {% set lvl = r.level|lower %}
 {% set channel_label = {'email': 'Email', 'sms': 'SMS', 'url': 'Link'}.get(row.channel, row.channel) %}
