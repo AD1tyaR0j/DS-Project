@@ -1,33 +1,58 @@
 {% extends "base.html" %}
 {% block title %}History · PhishGuard{% endblock %}
 {% block content %}
-<h1>History</h1>
-<p class="lead">{{ stats.total }} message{{ '' if stats.total == 1 else 's' }} analysed.</p>
+<section class="page-head">
+  <p class="eyebrow" data-scramble>History</p>
+  <h1 data-split>Past analyses</h1>
+  <p class="lead">{{ stats.total }} message{{ '' if stats.total == 1 else 's' }} analysed. Filter by risk level, or open any row for the full report.</p>
+</section>
 
-<div class="filters">
-  <a href="{{ url_for('history_view') }}" class="chip {{ 'on' if not level }}">All</a>
+<div class="stat-row">
+  <a href="{{ url_for('history_view') }}" class="stat {{ 'on' if not level }}">
+    <span class="stat-label">All</span>
+    <span class="stat-num">{{ stats.total }}</span>
+  </a>
   {% for l in levels|reverse %}
-    <a href="{{ url_for('history_view', level=l) }}" class="chip lvl-{{ l|lower }} {{ 'on' if level == l }}">{{ l }} · {{ stats.by_level.get(l, 0) }}</a>
+    {% set n = stats.by_level.get(l, 0) %}
+    <a href="{{ url_for('history_view', level=l) }}" class="stat lvl-{{ l|lower }} {{ 'on' if level == l }}">
+      <span class="stat-label"><i></i>{{ l }}</span>
+      <span class="stat-num">{{ n }}</span>
+      <span class="stat-bar"><i style="--p: {{ ((n / stats.total * 100) if stats.total else 0)|round|int }}"></i></span>
+    </a>
   {% endfor %}
 </div>
 
 {% if not rows %}
-  <div class="card empty"><p>Nothing here yet. <a href="{{ url_for('index') }}">Analyse a message</a> and it will show up in this list.</p></div>
+  <div class="panel empty">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg>
+    <p>{{ 'No ' ~ level ~ ' risk messages yet.' if level else 'Nothing here yet.' }}</p>
+    <a class="btn primary" href="{{ url_for('index') }}">Analyse a message</a>
+  </div>
 {% else %}
-<div class="card table-wrap">
-  <table>
-    <thead><tr><th>Risk</th><th>Channel</th><th>Message</th><th>Top reason</th><th>Your verdict</th><th>When (UTC)</th></tr></thead>
+<div class="panel flush">
+  <table class="table">
+    <thead><tr><th>Risk</th><th>Message</th><th class="hide-sm">Top reason</th><th class="hide-sm">Feedback</th><th>When (UTC)</th></tr></thead>
     <tbody>
       {% for row in rows %}
         {% set top = (row.result.indicators|selectattr('weight', 'gt', 0)|rejectattr('category', 'equalto', 'model')|list)[:1] %}
-        <tr style="--i: {{ loop.index0 }}">
-          <td><a class="pill lvl-{{ row.level|lower }}" href="{{ url_for('result', analysis_id=row.id) }}">{{ row.score }} {{ row.level }}</a></td>
-          <td>{{ row.channel }}</td>
-          <td class="msg"><a href="{{ url_for('result', analysis_id=row.id) }}">{{ (row.subject or row.body)[:80]|defang_text }}</a>
-            {% if row.sender %}<div class="muted small">{{ row.sender }}</div>{% endif %}</td>
-          <td class="small">{{ top[0].title if top else '-' }}</td>
-          <td>{{ row.feedback or '-' }}</td>
-          <td class="small nowrap">{{ row.created_at.replace('T', ' ')[:16] }}</td>
+        <tr class="lvl-{{ row.level|lower }}" style="--i: {{ loop.index0 }}">
+          <td>
+            <a class="risk-cell" href="{{ url_for('result', analysis_id=row.id) }}">
+              <span class="score-chip">{{ row.score }}</span>
+              <span class="risk-name">{{ row.level }}</span>
+            </a>
+          </td>
+          <td class="msg">
+            <a href="{{ url_for('result', analysis_id=row.id) }}">{{ (row.subject or row.body)[:90]|defang_text }}</a>
+            <div class="sub"><span class="ch">{{ {'email': 'Email', 'sms': 'SMS', 'url': 'Link'}.get(row.channel, row.channel) }}</span>{% if row.sender %} · {{ row.sender|defang_text }}{% endif %}</div>
+          </td>
+          <td class="small hide-sm">{{ top[0].title if top else '—' }}</td>
+          <td class="hide-sm">
+            {% if row.feedback == 'phish' %}<span class="tag-sm bad">Phishing</span>
+            {% elif row.feedback == 'legit' %}<span class="tag-sm good">Legitimate</span>
+            {% else %}<span class="muted">—</span>{% endif %}
+          </td>
+          <td class="small nowrap mono-num">{{ row.created_at.replace('T', ' ')[:16] }}</td>
         </tr>
       {% endfor %}
     </tbody>
